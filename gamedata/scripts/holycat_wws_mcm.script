@@ -1,0 +1,81 @@
+local lower_coef = 1.1
+local raise_coef = 0.7
+
+local KEY_TEST = DIK_keys.DIK_ADD
+local KEY_TEST2 = DIK_keys.DIK_SUBTRACT
+
+local function on_mcm_load()
+    local options = {
+        id = "hc_wws",
+        sh = true,
+        gr = {
+            { id = "hc_wws",    type = "slide", link = "ui_options_slider_player", text = "ui_mcm_menu_hc_wws", size = { 512, 50 }, spacing = 20 },
+
+            { id = "desc_mcm",  type = "desc",  text = "ui_mcm_menu_wws_text" },
+            { id = "wws_low",   type = "track", val = 2,                           min = 0.1,                   max = 2,          step = 0.01, def = 1 },
+            { id = "wws_raise", type = "track", val = 2,                           min = 0.1,                   max = 2,          step = 0.01, def = 0.1 },
+        },
+    }
+    return options
+end
+
+local function update_speed(coef)
+    speed.remove_speed("weapon_low")
+    speed.add_speed("weapon_low", coef, false, true)
+end
+
+-- TODO: Delete this on release
+local function debug_info()
+    printf("Move state: %s", level.actor_moving_state())
+    printf("Run speed: %s", db.actor:get_actor_run_coef())
+    printf("===================")
+end
+
+-- TODO: Delete this on release
+local function on_key_press(key)
+    if (key == KEY_TEST) then
+        printf("WWS Info")
+        debug_info()
+    end
+    if key == KEY_TEST2 then
+        printf("!!!Remove speed modifcator!!!")
+        speed.remove_speed("weapon_low")
+        debug_info()
+    end
+end
+
+local function actor_on_weapon_lower()
+    printf("~ Weapon low") -- TODO: Delete this on release
+    update_speed(lower_coef)
+    debug_info() -- TODO: Delete this on release
+end
+
+local function actor_on_weapon_raise()
+    printf("~ Weapon raise") -- TODO: Delete this on release
+    update_speed(raise_coef)
+    debug_info() -- TODO: Delete this on release
+end
+
+local function on_option_change()
+    lower_coef = ui_mcm.get("hc_wws/wws_low")
+    raise_coef = ui_mcm.get("hc_wws/wws_raise")
+end
+
+local function actor_on_hud_animation_end(binder, item, section, motion, state, slot)
+    if IsWeapon(binder) and section == "anm_hide" then
+        SendScriptCallback("actor_on_weapon_lower", binder)
+    elseif IsWeapon(binder) and section == "anm_show" then
+        SendScriptCallback("actor_on_weapon_raise", binder)
+    end
+end
+function on_game_start()
+    RegisterScriptCallback("on_key_press", on_key_press) -- TODO: Delete this on release
+
+    RegisterScriptCallback("actor_on_weapon_lower", actor_on_weapon_lower)
+    RegisterScriptCallback("actor_on_weapon_raise", actor_on_weapon_raise)
+
+    RegisterScriptCallback("actor_on_hud_animation_end", actor_on_hud_animation_end)
+
+    RegisterScriptCallback("on_option_change", on_option_change)
+    RegisterScriptCallback("on_game_load", on_option_change)
+end
